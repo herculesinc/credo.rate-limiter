@@ -2,19 +2,17 @@
 // IMPORTS
 // ================================================================================================
 var redis = require('redis');
-// MODULE VARIABLES
-// ================================================================================================
-exports.logger = { log(message) { } };
 // CLASS DEFINITION
 // ================================================================================================
 class RateLimiter {
     constructor(config) {
         this.idspace = config.idspace;
         this.client = redis.createClient(config.redis);
+        this.log = config.logger;
     }
     getTimeLeft(id, options) {
         var start = process.hrtime();
-        exports.logger.log(`Checking rate limit for ${id}`);
+        this.log && this.log(`Checking rate limit for ${id}`);
         return new Promise((resolve, reject) => {
             var timestamp = Date.now();
             var key = `credo::rate-limiter::${this.idspace}::${id}`;
@@ -22,7 +20,7 @@ class RateLimiter {
                 if (err) {
                     return reject(err);
                 }
-                exports.logger.log(`Checked rate limit for ${id} in ${since(start)} ms`);
+                this.log && this.log(`Checked rate limit for ${id} in ${since(start)} ms`);
                 resolve(reply);
             });
         });
@@ -49,6 +47,7 @@ var script = `
 			return window - math.ceil((timestamp - first_timestamp) / 1000)
 		end
 	end
+	
 	redis.call("ZADD", KEYS[1], timestamp, timestamp)
 	redis.call("EXPIRE", KEYS[1], window)
 	return 0

@@ -9,9 +9,10 @@ export interface LimiterConfig {
 	idspace: string;
 	redis: {
 		host: string;
-		port: string;
+		port: number;
 		auth_pass: string;
 	}
+	logger?: Logger;
 }
 
 export interface RateOptions {
@@ -20,27 +21,25 @@ export interface RateOptions {
 }
 
 export interface Logger {
-	log(message: string);
+	(message: string): void;
 }
-
-// MODULE VARIABLES
-// ================================================================================================
-export var logger = { log(message: string) {} };
 
 // CLASS DEFINITION
 // ================================================================================================
 export class RateLimiter {
 	idspace: string;
 	client: redis.RedisClient;
+	log: Logger;
 	
 	constructor(config: LimiterConfig) {
 		this.idspace = config.idspace;
 		this.client = redis.createClient(config.redis);
+		this.log = config.logger;
 	}
 	
 	getTimeLeft(id: string, options: RateOptions): Promise<number> {
 		var start = process.hrtime();
-		logger.log(`Checking rate limit for ${id}`);
+		this.log && this.log(`Checking rate limit for ${id}`);
 		
 		return new Promise((resolve, reject) => {
 			var timestamp = Date.now();
@@ -50,7 +49,7 @@ export class RateLimiter {
 					return reject(err);
 				}
 				
-				logger.log(`Checked rate limit for ${id} in ${since(start)} ms`);
+				this.log && this.log(`Checked rate limit for ${id} in ${since(start)} ms`);
 				resolve(reply);
 			});
 		});
