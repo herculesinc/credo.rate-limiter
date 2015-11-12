@@ -16,7 +16,7 @@ class RateLimiter {
         return new Promise((resolve, reject) => {
             var timestamp = Date.now();
             var key = `credo::rate-limiter::${this.idspace}::${id}`;
-            this.client.eval(script, 1, key, timestamp, options.window, options.limit, function (err, reply) {
+            this.client.eval(script, 1, key, timestamp, options.window, options.limit, (err, reply) => {
                 if (err) {
                     return reject(err);
                 }
