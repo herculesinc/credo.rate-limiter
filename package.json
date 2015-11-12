@@ -1,0 +1,25 @@
+{
+  "name": "@credo/rate-limiter",
+  "version": "0.1.0",
+  "description": "Rate limiter for Credo application",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/herculesinc/credo.rate-limiter.git/"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "irakliy",
+    "email": "irakliy81@live.com"
+  },
+  "engines": {
+    "node": "5.0.0"
+  },
+  "devDependencies": {
+    "del": "^1.2.1",
+    "gulp": "^3.9.0"
+  },
+  "dependencies": {
+    "redis": "^2.3.0"
+  }
+}
