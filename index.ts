@@ -1,4 +1,3 @@
-'use strict';
 // IMPORTS
 // ================================================================================================
 import * as redis from 'redis';
@@ -35,6 +34,11 @@ export class RateLimiter {
 		this.idspace = config.idspace;
 		this.client = redis.createClient(config.redis);
 		this.log = config.logger;
+        
+        // error in redis connection should not bring down the service
+        this.client.on('error', function(error) {
+            console.error('Rate-limiter redis conneciton error: ' + error);
+        });
 	}
 	
 	getTimeLeft(id: string, options: RateOptions): Promise<number> {
