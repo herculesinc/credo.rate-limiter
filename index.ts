@@ -120,6 +120,14 @@ export class TooManyRequestsError extends nova.Exception {
 		this.retryAfter = retryAfter;
 		this.headers = { 'Retry-After': retryAfter.toString() };
     }
+
+    toJSON(): any {
+        return {
+            name    	: this.name,
+            message 	: this.message,
+			retryAfter	: this.retryAfter
+        };
+    }
 }
 
 export class RateLimiterError extends nova.Exception {
