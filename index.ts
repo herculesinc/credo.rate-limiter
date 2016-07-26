@@ -1,70 +1,90 @@
 // IMPORTS
 // ================================================================================================
+import * as events from 'events';
 import * as redis from 'redis';
+import * as nova from 'nova-base';
+
+// MODULE VARIABLES
+// ================================================================================================
+const since = nova.util.since;
+const ERROR_EVENT = 'error';
 
 // INTERFACES
 // ================================================================================================
-export interface LimiterConfig {
-	idspace: string;
-	redis: {
-		host: string;
-		port: number;
-		auth_pass: string;
-	}
-	logger?: Logger;
+export interface RedisConnectionConfig {
+	host            : string;
+	port            : number;
+	password        : string;
+	prefix?         : string;
+	retry_strategy? : (options: any) => number | Error;
 }
 
-export interface RateOptions {
-	window: number;
-	limit: number;
+export interface ConnectionRetryOptions {
+	error           : Error;
+	attempt         : number;
+	total_retry_time: number;
+	times_connected : number;
 }
 
-export interface Logger {
-	(message: string): void;
+export interface RateLimiterConfig {
+	name?       : string;
+	idspace     : string;
+	redis       : RedisConnectionConfig;
 }
 
 // CLASS DEFINITION
 // ================================================================================================
-export class RateLimiter {
-	idspace: string;
-	client: redis.RedisClient;
-	log: Logger;
+export class RateLimiter extends events.EventEmitter implements nova.RateLimiter {
+
+	name	: string;
+	idspace	: string;
+	client	: redis.RedisClient;
+	logger?	: nova.Logger;
 	
-	constructor(config: LimiterConfig) {
+	constructor(config: RateLimiterConfig, logger?: nova.Logger) {
+		super();
+
+		if (!config) throw TypeError('Cannot create Rate Limiter: config is undefined');
+		if (!config.idspace) throw TypeError('Cannot create Rate Limiter: idspace is undefined');
+		if (!config.redis) throw TypeError('Cannot create Rate Limiter: redis settings are undefined');
+
+		// initialize instance variables
+		this.name = config.name || 'rate-limiter';
 		this.idspace = config.idspace;
 		this.client = redis.createClient(config.redis);
-		this.log = config.logger;
+		this.logger = logger;
         
         // error in redis connection should not bring down the service
-        this.client.on('error', function(error) {
-            console.error('Rate-limiter redis conneciton error: ' + error);
+        this.client.on('error', (error) => {
+            this.emit(ERROR_EVENT, new RateLimiterError(error, 'Rate Limiter error'));
         });
 	}
 	
-	getTimeLeft(id: string, options: RateOptions): Promise<number> {
-		var start = process.hrtime();
-		this.log && this.log(`Checking rate limit for ${id}`);
+	try(id: string, options: nova.RateOptions): Promise<any> {
+		if (!id) throw new TypeError('Cannot check rate limit: id is undefined');
+		if (!options) throw new TypeError('Cannot check rate limit: options are undefined');
+
+		const start = process.hrtime();
+		this.logger && this.logger.debug(`Checking rate limit for ${id}`);
 		
 		return new Promise((resolve, reject) => {
-			var timestamp = Date.now();
-			var key = `credo::rate-limiter::${this.idspace}::${id}`;
-			this.client.eval(script, 1, key, timestamp, options.window, options.limit, (err, reply) => {
-				if (err) {
-					return reject(err);
+			const timestamp = Date.now();
+			const key = `credo::rate-limiter::${this.idspace}::${id}`;
+			this.client.eval(script, 1, key, timestamp, options.window, options.limit, (error, result) => {
+				this.logger && this.logger.trace(this.name, 'try', since(start), !error);
+				if (error) {
+					error = new RateLimiterError(error, 'Failed to check rate limit');
+					return reject(error);
 				}
 				
-				this.log && this.log(`Checked rate limit for ${id} in ${since(start)} ms`);
-				resolve(reply);
+				if (result !== 0) {
+					return reject(new TooManyRequestsError(id, result));
+				}
+				
+				resolve();
 			});
 		});
 	}
-}
-
-// HELPER FUNCTIONS
-// ================================================================================================
-function since(start: number[]) {
-    var diff = process.hrtime(start);
-    return (diff[0] * 1000 + diff[1] / 1000000);
 }
 
 // LUA SCRIPT
@@ -86,3 +106,24 @@ var script = `
 	redis.call("EXPIRE", KEYS[1], window)
 	return 0
 `;
+
+// ERRORS
+// ================================================================================================
+export class TooManyRequestsError extends nova.Exception {
+	id			: string;
+	retryAfter	: number;
+	
+    constructor(id: string, retryAfter: number) {
+        super(`Rate limit exceeded for {${id}}`, nova.HttpStatusCode.TooManyRequests);
+
+		this.id = id;
+		this.retryAfter = retryAfter;
+		this.headers = { 'Retry-After': retryAfter.toString() };
+    }
+}
+
+export class RateLimiterError extends nova.Exception {
+    constructor(cause: Error, message: string) {
+        super({ cause, message });
+    }
+}

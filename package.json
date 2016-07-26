@@ -1,25 +1,33 @@
 {
   "name": "@credo/rate-limiter",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Rate limiter for Credo application",
+  "keywords": [
+    "credo",
+    "rate",
+    "limiting",
+    "throttling"
+  ],
   "main": "index.js",
+  "typings": "credo-rate-limiter.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/herculesinc/credo.rate-limiter.git/"
   },
   "license": "MIT",
   "author": {
-    "name": "irakliy",
-    "email": "irakliy81@live.com"
+    "name": "Credo360, Inc.",
+    "email": "developers@credo360.com"
   },
   "engines": {
-    "node": "5.0.0"
-  },
-  "devDependencies": {
-    "del": "^1.2.1",
-    "gulp": "^3.9.0"
+    "node": "6.0.0"
   },
   "dependencies": {
-    "redis": "^2.3.0"
+    "nova-base": "0.4.x",
+    "redis": "2.6.x"
+  },
+  "devDependencies": {
+    "del": "2.2.x",
+    "gulp": "3.9.x"
   }
 }
