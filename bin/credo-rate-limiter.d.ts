@@ -2,6 +2,7 @@ declare module "@credo/rate-limiter" {
     
     // IMPORTS AND RE-EXPORTS
     // --------------------------------------------------------------------------------------------
+    import * as events from 'events';
     import * as nova from 'nova-base';
 
     export { RateOptions } from 'nova-base';
@@ -31,7 +32,7 @@ declare module "@credo/rate-limiter" {
         redis       : RedisConnectionConfig;
 	}
 	
-	export class RateLimiter implements nova.RateLimiter {
+	export class RateLimiter extends events.EventEmitter implements nova.RateLimiter {
 
         constructor(config: RateLimiterConfig, logger?: nova.Logger);
 

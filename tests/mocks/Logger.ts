@@ -22,7 +22,12 @@ export class MockLogger {
     }
 
     trace(service: string, command: string, time: number, success?: boolean) {
-        console.log(`[${service}]: executed {${command}} in ${time} ms`);
+        if (success) {
+            console.log(`[${service}]: executed {${command}} in ${time} ms`);
+        }
+        else {
+            console.log(`[${service}]: failed to execute {${command}} in ${time} ms`);
+        }
     }
 
     request(request: any, response: http.ServerResponse) {
