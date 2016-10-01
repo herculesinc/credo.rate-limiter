@@ -7,7 +7,6 @@ import { MockLogger } from './mocks/Logger';
 // ================================================================================================
 const config = {
     name        : 'testlimiter',
-    idspace     : 'space1',
     redis: {
         host    : '',
         port    : 6379,

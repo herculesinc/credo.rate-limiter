@@ -28,7 +28,6 @@ declare module "@credo/rate-limiter" {
     // --------------------------------------------------------------------------------------------
     export interface RateLimiterConfig {
 		name?       : string;
-        idspace     : string;
         redis       : RedisConnectionConfig;
 	}
 	

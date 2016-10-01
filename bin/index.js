@@ -15,13 +15,10 @@ class RateLimiter extends events.EventEmitter {
         super();
         if (!config)
             throw TypeError('Cannot create Rate Limiter: config is undefined');
-        if (!config.idspace)
-            throw TypeError('Cannot create Rate Limiter: idspace is undefined');
         if (!config.redis)
             throw TypeError('Cannot create Rate Limiter: redis settings are undefined');
         // initialize instance variables
         this.name = config.name || 'rate-limiter';
-        this.idspace = config.idspace;
         this.client = redis.createClient(config.redis);
         this.logger = logger;
         // error in redis connection should not bring down the service
@@ -38,7 +35,7 @@ class RateLimiter extends events.EventEmitter {
         this.logger && this.logger.debug(`Checking rate limit for ${id}`);
         return new Promise((resolve, reject) => {
             const timestamp = Date.now();
-            const key = `credo::rate-limiter::${this.idspace}::${id}`;
+            const key = `credo::rate-limiter::${id}`;
             this.client.eval(script, 1, key, timestamp, options.window, options.limit, (error, result) => {
                 this.logger && this.logger.trace(this.name, 'try', since(start), !error);
                 if (error) {
