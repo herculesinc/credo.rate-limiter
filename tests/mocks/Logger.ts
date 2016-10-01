@@ -5,7 +5,7 @@ import { Logger } from 'nova-base';
 
 // LOGGER CLASS
 // =================================================================================================
-export class MockLogger {
+export class MockLogger implements Logger {
 
     debug(message: string) { console.log(message); }
     info (message: string) { console.info(message); }
