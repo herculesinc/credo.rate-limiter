@@ -53,7 +53,7 @@ class RateLimiter extends events.EventEmitter {
 exports.RateLimiter = RateLimiter;
 // LUA SCRIPT
 // ================================================================================================
-var script = `
+const script = `
 	local timestamp = tonumber(ARGV[1])
 	local window = tonumber(ARGV[2])
 	local limit = tonumber(ARGV[3])
