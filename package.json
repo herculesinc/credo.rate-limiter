@@ -1,6 +1,6 @@
 {
   "name": "@credo/rate-limiter",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Rate limiter for Credo application",
   "keywords": [
     "credo",
@@ -23,7 +23,7 @@
     "node": "6.4.0"
   },
   "dependencies": {
-    "nova-base": "0.6.x",
+    "nova-base": "0.7.x",
     "redis": "2.6.x"
   },
   "devDependencies": {
