@@ -61,7 +61,7 @@ export class RateLimiter extends events.EventEmitter implements nova.RateLimiter
 		if (!options) throw new TypeError('Cannot check rate limit: options are undefined');
 
 		const start = process.hrtime();
-		this.logger && this.logger.debug(`Checking rate limit for ${id}`);
+		this.logger && this.logger.debug(`Checking rate limit for ${id}`, this.name);
 		
 		return new Promise((resolve, reject) => {
 			const timestamp = Date.now();
