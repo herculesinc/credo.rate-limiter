@@ -89,24 +89,20 @@ const script = `
 	local timestamp = tonumber(ARGV[1])
 	local window = tonumber(ARGV[2])
 	local limit = tonumber(ARGV[3])
-	
+	local retryAfter = 0
+
 	if redis.call("EXISTS", KEYS[1]) == 1 then
 		redis.call("ZREMRANGEBYSCORE", KEYS[1], "-inf", timestamp - window * 1000)
-		local count = redis.call("ZCARD", KEYS[1])
-		if count >= limit then
-			if count < limit * 2 then
-				redis.call("ZADD", KEYS[1], timestamp, timestamp)
-				redis.call("EXPIRE", KEYS[1], window)
-			end
-
+		if redis.call("ZCARD", KEYS[1]) >= limit then
+			redis.call("ZREMRANGEBYRANK", KEYS[1], 0, 0)
 			local first_timestamp = tonumber(redis.call("ZRANGE", KEYS[1], 0, 0)[1])
-			return window - math.ceil((timestamp - first_timestamp) / 1000)
+			retryAfter = window - math.ceil((timestamp - first_timestamp) / 1000)
 		end
 	end
 
 	redis.call("ZADD", KEYS[1], timestamp, timestamp)
 	redis.call("EXPIRE", KEYS[1], window)
-	return 0
+	return retryAfter
 `;
 
 // ERRORS
