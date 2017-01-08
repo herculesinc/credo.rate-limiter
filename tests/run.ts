@@ -10,16 +10,15 @@ const config = {
     redis: {
         host    : '',
         port    : 6379,
-        password: '',
-        prefix  : 'testlimiter'
+        password: ''
     }
 };
 
-const limiter = new RateLimiter(config, new MockLogger());
+const limiter = new RateLimiter(config);
 
 const options = {
-    window  : 2,
-    limit   : 3
+    window  : 30,
+    limit   : 50
 };
 
 // TESTS
@@ -27,20 +26,31 @@ const options = {
 async function runTests() {
     const id = 'id1';
 
-    try {
-        await limiter.try(id, options);
-        await limiter.try(id, options);
-        await limiter.try(id, options);
-        await limiter.try(id, options);
+    for (let i = 0; i < 30; i++) {
+        setTimeout(function() {
+            runBatch(i, id);
+        }, i * 1000);
     }
-    catch (e) {
-        console.log(e.stack);
-        console.log(JSON.stringify(e));
+}
+
+async function runBatch(batch: number, id: string) {
+    const promises = [];
+    for (let i = 0; i < 5; i++) {
+        promises.push(runTest(id));
     }
 
-    setTimeout(async function() {
+    const results = await Promise.all(promises);
+    console.log(`batch ${batch}: ` + JSON.stringify(results));
+}
+
+async function runTest(id: string): Promise<number> {
+    try {
         await limiter.try(id, options);
-    }, 2000);
+        return 1;
+    } 
+    catch (error) {
+        return 0;
+    }
 }
 
 // RUN TEST
