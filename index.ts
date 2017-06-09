@@ -57,7 +57,13 @@ export class RateLimiter extends events.EventEmitter implements nova.RateLimiter
         
         // error in redis connection should not bring down the service
         this.client.on('error', (error) => {
-            this.emit(ERROR_EVENT, new RateLimiterError(error, 'Rate Limiter error'));
+            if (error.command === 'AUTH' && error.code === 'UNCERTAIN_STATE') {                
+                // this will be triggered on recconect attempts - do nothing
+                this.logger && logger.warn('Suppressing AUTH command error on reconnect', this.name);
+            }
+            else {
+                this.emit(ERROR_EVENT, new RateLimiterError(error, 'Rate Limiter error'));
+            }
         });
 	}
 	
@@ -91,7 +97,7 @@ export class RateLimiter extends events.EventEmitter implements nova.RateLimiter
 
 // HELPER FUNCTIONS
 // ================================================================================================
-function prepareRedisOptions(options: RedisConnectionConfig, limiterName: string, logger?: nova.Logger): RedisConnectionConfig {
+function prepareRedisOptions(options: RedisConnectionConfig, sourceName: string, logger?: nova.Logger): RedisConnectionConfig {
     let redisOptions = options;
 
     // make sure retry strategy is defined
@@ -104,7 +110,7 @@ function prepareRedisOptions(options: RedisConnectionConfig, limiterName: string
                 return new Error('Retry time exhausted');
             }
             
-            logger && logger.warn('Redis connection lost. Trying to recconect', limiterName);
+            logger && logger.warn('Redis connection lost. Trying to recconect', sourceName);
             return Math.min(options.attempt * RETRY_INTERVAL_STEP, MAX_RETRY_INTERVAL);
         }};
     }
