@@ -10,6 +10,10 @@ import * as nova from 'nova-base';
 const since = nova.util.since;
 const ERROR_EVENT = 'error';
 
+const MAX_RETRY_TIME = 60000;       // 1 minute
+const MAX_RETRY_INTERVAL = 3000;    // 3 seconds
+const RETRY_INTERVAL_STEP = 200;    // 200 milliseconds
+
 // INTERFACES
 // ================================================================================================
 export interface RedisConnectionConfig {
@@ -17,11 +21,11 @@ export interface RedisConnectionConfig {
 	port            : number;
 	password        : string;
 	prefix?         : string;
-	retry_strategy? : (options: any) => number | Error;
+	retry_strategy? : (options: RetryStrategyOptions) => number | Error;
 }
 
-export interface ConnectionRetryOptions {
-	error           : Error;
+export interface RetryStrategyOptions {
+	error           : any;
 	attempt         : number;
 	total_retry_time: number;
 	times_connected : number;
@@ -48,7 +52,7 @@ export class RateLimiter extends events.EventEmitter implements nova.RateLimiter
 
 		// initialize instance variables
 		this.name = config.name || 'rate-limiter';
-		this.client = redis.createClient(config.redis);
+		this.client = redis.createClient(prepareRedisOptions(config.redis, this.name, logger));
 		this.logger = logger;
         
         // error in redis connection should not bring down the service
@@ -83,6 +87,29 @@ export class RateLimiter extends events.EventEmitter implements nova.RateLimiter
 			});
 		});
 	}
+}
+
+// HELPER FUNCTIONS
+// ================================================================================================
+function prepareRedisOptions(options: RedisConnectionConfig, limiterName: string, logger?: nova.Logger): RedisConnectionConfig {
+    let redisOptions = options;
+
+    // make sure retry strategy is defined
+    if (!redisOptions.retry_strategy) {
+        redisOptions = {...redisOptions, retry_strategy: function(options: RetryStrategyOptions) {
+            if (options.error && options.error.code === 'ECONNREFUSED') {
+                return new Error('The server refused the connection');
+            }
+            else if (options.total_retry_time > MAX_RETRY_TIME) {
+                return new Error('Retry time exhausted');
+            }
+            
+            logger && logger.warn('Redis connection lost. Trying to recconect', limiterName);
+            return Math.min(options.attempt * RETRY_INTERVAL_STEP, MAX_RETRY_INTERVAL);
+        }};
+    }
+
+    return redisOptions;
 }
 
 // LUA SCRIPT
