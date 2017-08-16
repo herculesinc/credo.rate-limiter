@@ -9,8 +9,11 @@ const config = {
     name        : 'testlimiter',
     redis: {
         host    : '',
-        port    : 6379,
-        password: ''
+        port    : 6380,
+        password: '',
+        "tls": {
+            servername: ""
+        }
     }
 };
 
