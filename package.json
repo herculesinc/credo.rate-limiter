@@ -1,6 +1,6 @@
 {
   "name": "@credo/rate-limiter",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Rate limiter for Credo application",
   "keywords": [
     "credo",
@@ -20,7 +20,7 @@
     "email": "developers@credo360.com"
   },
   "engines": {
-    "node": "8.9.x"
+    "node": "6.11.x"
   },
   "dependencies": {
     "nova-base": "0.8.x",
